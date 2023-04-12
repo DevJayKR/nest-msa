@@ -1,0 +1,98 @@
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: msa_nginx
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    environment:
+      - NGINX_PORT=${NGINX_PORT}
+      - SERVER_PORT=${SERVER_PORT}
+    ports:
+      - 80:80
+    depends_on:
+      - user_api
+      - product_api
+    networks:
+      - msa-networks
+
+  user_api:
+    build:
+      context: .
+      dockerfile: ./apps/user/Dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/user/app
+    env_file:
+      - .env
+    command: npm run start:dev user
+    ports:
+      - 3001:3001
+    #depends_on:
+    #  - postgres_db
+    networks:
+      - msa-networks
+
+  product_api:
+    build:
+      context: .
+      dockerfile: ./apps/product/Dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/product/app
+    env_file:
+      - .env
+    command: npm run start:dev product
+    ports:
+      - 3002:3002
+    #depends_on:
+    #  - postgres_db
+    networks:
+      - msa-networks
+
+  #redis:
+  #  image: 'redis:alpine'
+  #  env_file:
+  #    - .env
+  #  ports:
+  #    - 6379:6379
+  #  networks:
+  #    - msa-networks
+  #  volumes:
+  #    - redis:/data
+
+  #redis-commander:
+  #  image: rediscommander/redis-commander:latest
+  #  environment:
+  #    - REDIS_HOSTS=local:redis:6379
+  #  ports:
+  #    - 8081:8081
+  #  depends_on:
+  #    - redis
+  #  networks:
+  #    - msa-networks
+
+  postgres_db:
+    image: postgres
+    restart: always
+    container_name: msa_db
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=asdf1234
+      - POSTGRES_DB=msa
+    ports:
+      - 5432:5432
+    networks:
+      - msa-networks
+
+volumes:
+  postgres-data:
+    driver: cio
+    driver_opts:
+      profile: 'POSTGRESQL'
+  redis:
+    driver: local
+
+networks:
+  msa-networks:
+    driver: bridge
