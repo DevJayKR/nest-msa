@@ -3,20 +3,22 @@ services:
     image: nginx:stable-alpine
     container_name: msa_nginx
     volumes:
-      - ./nginx/templates:/etc/nginx/templates
+      #- ./nginx/templates:/etc/nginx/templates
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    environment:
-      - NGINX_PORT=${NGINX_PORT}
-      - SERVER_PORT=${SERVER_PORT}
+    #    environment:
+    #      - 80:80
+    #      - SERVER_PORT=${SERVER_PORT}
     ports:
       - 80:80
     depends_on:
-      - user_api
+      - user_api_01
+      - user_api_02
+      - user_api_03
       - product_api
     networks:
       - msa-networks
 
-  user_api:
+  user_api_01:
     build:
       context: .
       dockerfile: ./apps/user/Dockerfile
@@ -33,6 +35,40 @@ services:
     networks:
       - msa-networks
 
+  user_api_02:
+    build:
+      context: .
+      dockerfile: ./apps/user/Dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/user/app
+    env_file:
+      - .env
+    command: npm run start:dev user
+    ports:
+      - 3002:3001
+    #depends_on:
+    #  - postgres_db
+    networks:
+      - msa-networks
+
+  user_api_03:
+    build:
+      context: .
+      dockerfile: ./apps/user/Dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/user/app
+    env_file:
+      - .env
+    command: npm run start:dev user
+    ports:
+      - 3003:3001
+    #depends_on:
+    #  - postgres_db
+    networks:
+      - msa-networks
+
   product_api:
     build:
       context: .
@@ -44,7 +80,7 @@ services:
       - .env
     command: npm run start:dev product
     ports:
-      - 3002:3002
+      - 4001:4001
     #depends_on:
     #  - postgres_db
     networks:
